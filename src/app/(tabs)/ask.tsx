@@ -20,8 +20,10 @@ import { friendlyError } from '@/state/hooks';
 import { IconButton } from '@/ui/Button';
 import { InlineLoading } from '@/ui/Feedback';
 import { MascotCard } from '@/ui/Layout';
+import { useKeyboardOpen } from '@/ui/motion';
+import { useTabBarInset } from '@/ui/tabInset';
 import { AppText } from '@/ui/Text';
-import { RADIUS, SPACE, useTheme, useType } from '@/ui/theme';
+import { RADIUS, SPACE, cardShadow, useTheme, useType } from '@/ui/theme';
 
 interface Turn {
   id: string;
@@ -41,7 +43,10 @@ function answerText(a: AssistantAnswer): string {
 export default function Ask() {
   const profile = useProfile();
   const { db, timeZone } = useApp();
-  const { c } = useTheme();
+  const { c, dark } = useTheme();
+  // The composer floats just above the island tab bar, and drops to the keyboard when it opens.
+  const tabInset = useTabBarInset();
+  const keyboardOpen = useKeyboardOpen();
   const type = useType();
   const params = useLocalSearchParams<{ q?: string }>();
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -140,7 +145,7 @@ export default function Ask() {
                   }
                 />
                 {SUGGESTED_QUESTIONS.map((s) => (
-                  <Pressable key={s} accessibilityRole="button" onPress={() => void ask(s)} style={({ pressed }) => [styles.suggestion, { borderColor: c.border, backgroundColor: pressed ? c.surfaceMuted : c.surface }]}>
+                  <Pressable key={s} accessibilityRole="button" onPress={() => void ask(s)} style={({ pressed }) => [styles.suggestion, { borderColor: c.ring, backgroundColor: pressed ? c.surfaceMuted : c.surface }]}>
                     <Ionicons name="chatbubble-ellipses-outline" size={18} color={c.primary} />
                     <AppText variant="body" style={{ flex: 1 }}>
                       {s}
@@ -178,8 +183,8 @@ export default function Ask() {
             ))}
           </View>
         </ScrollView>
-        <View style={[styles.inputBar, { backgroundColor: c.surface, borderTopColor: c.border }]}>
-          <View style={[styles.inputWrap, { backgroundColor: c.surfaceMuted }]}>
+        <View style={[styles.inputBar, { paddingBottom: SPACE.sm + (keyboardOpen ? 0 : tabInset) }]}>
+          <View style={[styles.inputWrap, { backgroundColor: c.surface, borderColor: c.ring }, cardShadow(dark)]}>
             <TextInput
               value={input}
               onChangeText={setInput}
@@ -210,8 +215,8 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: SPACE.lg, paddingTop: SPACE.md, paddingBottom: SPACE.sm, flexDirection: 'row' },
   scroll: { paddingHorizontal: SPACE.lg, paddingBottom: SPACE.xl },
   inner: { width: '100%', maxWidth: 720, alignSelf: 'center', gap: SPACE.xl },
-  suggestion: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, minHeight: 52, paddingHorizontal: SPACE.md, borderRadius: RADIUS.md, borderWidth: 1 },
+  suggestion: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, minHeight: 54, paddingHorizontal: SPACE.lg, borderRadius: RADIUS.pill, borderWidth: StyleSheet.hairlineWidth },
   question: { alignSelf: 'flex-end', maxWidth: '88%', paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, borderRadius: RADIUS.lg, borderBottomRightRadius: 6 },
-  inputBar: { paddingHorizontal: SPACE.lg, paddingTop: SPACE.sm, paddingBottom: SPACE.sm, borderTopWidth: StyleSheet.hairlineWidth, gap: SPACE.xs },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.lg, paddingLeft: SPACE.md, width: '100%', maxWidth: 720, alignSelf: 'center' },
+  inputBar: { paddingHorizontal: SPACE.md, paddingTop: SPACE.sm, gap: SPACE.xs },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.xl, borderWidth: StyleSheet.hairlineWidth, paddingLeft: SPACE.lg, paddingRight: 4, paddingVertical: 4, width: '100%', maxWidth: 720, alignSelf: 'center' },
 });

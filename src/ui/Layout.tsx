@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ReactNode } from 'react';
 import {
+  Animated,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -16,9 +17,46 @@ import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 import { HeroGradient } from './Brand';
 import type { IconName } from './Button';
 import { Illustration, illustrationWidth, type IllustrationName } from './Illustration';
+import { Reveal, useKeyboardOpen, usePressScale } from './motion';
+import { useTabBarInset } from './tabInset';
 import { AppText } from './Text';
 import { useTextSize } from './textSize';
-import { RADIUS, SPACE, cardShadow, toneColors, useTheme, type Tone } from './theme';
+import { BEZEL, RADIUS, SPACE, cardShadow, coreHighlight, toneColors, useTheme, type Tone } from './theme';
+
+/** Style keys that place a card in its parent; everything else styles the card's core. */
+const PLACEMENT_KEYS = new Set([
+  'margin',
+  'marginTop',
+  'marginBottom',
+  'marginLeft',
+  'marginRight',
+  'marginHorizontal',
+  'marginVertical',
+  'marginStart',
+  'marginEnd',
+  'flex',
+  'flexGrow',
+  'flexShrink',
+  'flexBasis',
+  'alignSelf',
+  'width',
+  'minWidth',
+  'maxWidth',
+  'position',
+  'top',
+  'left',
+  'right',
+  'bottom',
+  'zIndex',
+]);
+
+function splitPlacement(style: StyleProp<ViewStyle>): [ViewStyle, ViewStyle] {
+  const flat = (StyleSheet.flatten(style) ?? {}) as Record<string, unknown>;
+  const placement: Record<string, unknown> = {};
+  const core: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(flat)) (PLACEMENT_KEYS.has(k) ? placement : core)[k] = v;
+  return [placement as ViewStyle, core as ViewStyle];
+}
 
 export interface ScreenProps {
   children: ReactNode;
@@ -33,30 +71,37 @@ export interface ScreenProps {
 /** Page container: safe area, scroll, consistent gutters and max readable width. */
 export function Screen({ children, scroll = true, edges = ['top'], refreshControl, contentStyle, footer, keyboard }: ScreenProps) {
   const { c } = useTheme();
+  // On tab screens, keep the last card clear of the floating tab bar (it hides with the keyboard).
+  const tabInset = useTabBarInset();
+  const keyboardOpen = useKeyboardOpen(tabInset > 0);
+  const extra = keyboardOpen ? 0 : tabInset;
+  const ownBottom = (StyleSheet.flatten(contentStyle)?.paddingBottom as number | undefined) ?? SPACE.huge;
+  const bottom = footer ? null : { paddingBottom: ownBottom + extra };
   const body = scroll ? (
     <ScrollView
-      contentContainerStyle={[styles.content, contentStyle]}
+      contentContainerStyle={[styles.content, contentStyle, bottom]}
       keyboardShouldPersistTaps="handled"
       refreshControl={refreshControl}
       showsVerticalScrollIndicator={false}>
       <View style={styles.inner}>{children}</View>
     </ScrollView>
   ) : (
-    <View style={[styles.content, styles.fill, contentStyle]}>
+    <View style={[styles.content, styles.fill, contentStyle, bottom]}>
       <View style={[styles.inner, styles.fill]}>{children}</View>
     </View>
   );
+  const foot = footer ? <View style={{ paddingBottom: extra }}>{footer}</View> : null;
   return (
     <SafeAreaView edges={edges} style={[styles.fill, { backgroundColor: c.bg }]}>
       {keyboard ? (
         <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           {body}
-          {footer}
+          {foot}
         </KeyboardAvoidingView>
       ) : (
         <>
           {body}
-          {footer}
+          {foot}
         </>
       )}
     </SafeAreaView>
@@ -73,13 +118,16 @@ export function FormFooter({ children }: { children: ReactNode }) {
 }
 
 export function PageHeader({ eyebrow, title, subtitle, right }: { eyebrow?: string; title: string; subtitle?: string; right?: ReactNode }) {
+  const { c } = useTheme();
   return (
-    <View style={styles.header}>
+    <Reveal style={styles.header} distance={10}>
       <View style={styles.fill}>
         {eyebrow ? (
-          <AppText variant="overline" tone="primary" style={{ marginBottom: 2 }}>
-            {eyebrow}
-          </AppText>
+          <View style={[styles.eyebrow, { backgroundColor: c.primarySoft }]}>
+            <AppText variant="eyebrow" tone="primary">
+              {eyebrow}
+            </AppText>
+          </View>
         ) : null}
         <AppText variant="display" accessibilityRole="header">
           {title}
@@ -91,7 +139,7 @@ export function PageHeader({ eyebrow, title, subtitle, right }: { eyebrow?: stri
         ) : null}
       </View>
       {right ? <View style={{ marginLeft: SPACE.md }}>{right}</View> : null}
-    </View>
+    </Reveal>
   );
 }
 
@@ -103,38 +151,61 @@ export interface CardProps {
   accessibilityHint?: string;
   tone?: 'default' | 'muted' | 'hero' | Tone;
   padded?: boolean;
+  /** Fade up into place on first mount (default). Off when a parent already animates it. */
+  reveal?: boolean;
 }
 
-export function Card({ children, style, onPress, accessibilityLabel, accessibilityHint, tone = 'default', padded = true }: CardProps) {
+/**
+ * The main surface. Default and hero cards are "double-bezel": a white (or gradient) core set in a
+ * faint tray with a hairline ring and a soft ambient shadow, corners concentric. Tinted cards
+ * (muted, success, warning…) are callouts and stay flat. Tappable cards press with a spring.
+ * Placement styles (margins, flex, width) go on the outside; everything else styles the core.
+ */
+export function Card({ children, style, onPress, accessibilityLabel, accessibilityHint, tone = 'default', padded = true, reveal = true }: CardProps) {
   const { c, dark } = useTheme();
-  const bg =
-    tone === 'default' ? c.surface : tone === 'muted' ? c.surfaceMuted : tone === 'hero' ? c.hero : toneColors(c, tone as Tone).bg;
-  const border = tone === 'default' ? c.border : 'transparent';
-  const base: StyleProp<ViewStyle> = [
-    styles.card,
-    { backgroundColor: bg, borderColor: border },
-    tone === 'default' && cardShadow(dark),
-    padded && { padding: SPACE.lg },
-    style,
-  ];
-  const content = (
-    <>
+  const press = usePressScale(0.985);
+  const [placement, coreStyle] = splitPlacement(style);
+  const bezel = tone === 'default' || tone === 'hero';
+  const bg = tone === 'default' ? c.surface : tone === 'muted' ? c.surfaceMuted : tone === 'hero' ? c.hero : toneColors(c, tone as Tone).bg;
+  const core = (
+    <View
+      style={[
+        styles.core,
+        { backgroundColor: bg, borderRadius: bezel ? BEZEL.radius - BEZEL.pad : RADIUS.lg },
+        bezel && coreHighlight(c),
+        padded && { padding: SPACE.lg },
+        coreStyle,
+        tone === 'hero' && { overflow: 'hidden' },
+      ]}>
       {tone === 'hero' ? <HeroGradient /> : null}
       {children}
-    </>
+    </View>
   );
-  if (!onPress) return <View style={base}>{content}</View>;
-  return (
+  const body = (
+    <Animated.View
+      style={[
+        styles.grow,
+        bezel && [styles.shell, { backgroundColor: c.shell, borderColor: c.ring }, cardShadow(dark)],
+        onPress && { transform: [{ scale: press.scale }] },
+      ]}>
+      {core}
+    </Animated.View>
+  );
+  const content = onPress ? (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
       onPress={onPress}
-      android_ripple={{ color: c.surfaceSunken }}
-      style={({ pressed }) => [base, pressed && Platform.OS !== 'android' && { opacity: 0.9 }]}>
-      {content}
+      onPressIn={press.onPressIn}
+      onPressOut={press.onPressOut}
+      style={styles.grow}>
+      {body}
     </Pressable>
+  ) : (
+    body
   );
+  return reveal ? <Reveal style={placement}>{content}</Reveal> : <View style={placement}>{content}</View>;
 }
 
 /**
@@ -168,9 +239,9 @@ export function MascotCard({
   const h = Math.round(height * (scale > 1 ? 0.85 : 1));
   const w = illustrationWidth(art, h);
   return (
-    <View style={[{ paddingTop: rise }, style]}>
-      <Card tone={tone} onPress={onPress} accessibilityLabel={accessibilityLabel} style={{ overflow: 'visible', gap: SPACE.md }}>
-        {/* The card's padding is SPACE.lg and she stands SPACE.sm from its edge. */}
+    <Reveal style={[{ paddingTop: rise }, style]}>
+      <Card tone={tone} reveal={false} onPress={onPress} accessibilityLabel={accessibilityLabel} style={{ overflow: 'visible', gap: SPACE.md }}>
+        {/* The core sits BEZEL.pad inside the shell with SPACE.lg padding; she stands SPACE.sm from the shell's edge. */}
         <View style={{ paddingLeft: w, minHeight: h - rise - SPACE.lg, justifyContent: 'center', gap: SPACE.xs }}>{header}</View>
         {children}
       </Card>
@@ -178,7 +249,7 @@ export function MascotCard({
       <View pointerEvents="none" style={styles.mascot}>
         <Illustration name={art} height={h} />
       </View>
-    </View>
+    </Reveal>
   );
 }
 
@@ -314,8 +385,11 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: SPACE.lg, paddingBottom: SPACE.huge, paddingTop: SPACE.sm },
   inner: { width: '100%', maxWidth: 720, alignSelf: 'center', gap: SPACE.lg },
   footer: { paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, gap: SPACE.sm, width: '100%', maxWidth: 720, alignSelf: 'center' },
-  header: { flexDirection: 'row', alignItems: 'flex-end', paddingTop: SPACE.md, paddingBottom: SPACE.xs },
-  card: { borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  header: { flexDirection: 'row', alignItems: 'flex-end', paddingTop: SPACE.lg, paddingBottom: SPACE.sm },
+  eyebrow: { alignSelf: 'flex-start', borderRadius: RADIUS.pill, paddingHorizontal: SPACE.md, paddingVertical: 5, marginBottom: SPACE.sm },
+  grow: { flexGrow: 1 },
+  shell: { borderRadius: BEZEL.radius, padding: BEZEL.pad, borderWidth: StyleSheet.hairlineWidth },
+  core: { flexGrow: 1, overflow: 'hidden' },
   mascot: { position: 'absolute', left: SPACE.sm, top: 0, zIndex: 2, elevation: 4 },
   section: { gap: SPACE.sm, marginTop: SPACE.xs },
   sectionHead: { flexDirection: 'row', alignItems: 'center', minHeight: 32, gap: SPACE.sm },

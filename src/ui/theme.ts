@@ -1,11 +1,15 @@
 /**
- * FAITH AI design tokens. Soft lavender surfaces with an indigo-to-blue brand gradient, matching the
- * mascot artwork. Sized for older readers: body text 17, nothing essential below 14. Text colours
- * meet WCAG AA (≥4.5:1) on their intended surfaces, including both ends of the hero gradient;
- * field and button outlines meet 3:1; interactive targets are at least 44–48dp.
+ * FAITH AI design tokens. "Soft structuralism": a cool silver ground with a slight indigo bias, white
+ * cores set in machined double-bezel shells, very soft ambient shadows, and the indigo-to-blue brand
+ * gradient from the mascot artwork as the one bold colour. Type is Plus Jakarta Sans.
+ *
+ * Sized for older readers: body text 17, no text style below 14 (the tab bar labels are fixed at 12 so
+ * five fit a 360px phone). Text colours meet WCAG AA (≥4.5:1) on their intended surfaces,
+ * including both ends of the hero gradient; field and button outlines meet 3:1; interactive targets
+ * are at least 44–48dp.
  */
 import { useMemo } from 'react';
-import { Platform, StyleSheet, useColorScheme, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
+import { StyleSheet, useColorScheme, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
 import { useTextSize } from './textSize';
 
@@ -14,6 +18,14 @@ export interface Palette {
   surface: string;
   surfaceMuted: string;
   surfaceSunken: string;
+  /** Outer shell of a double-bezel card: a faint tray the white core sits in. */
+  shell: string;
+  /** Hairline ring around shells, floating bars and quiet controls. */
+  ring: string;
+  /** Inset top highlight on a card's core (the "glass edge"). */
+  highlight: string;
+  /** Coloured glow under primary buttons. */
+  glow: string;
   border: string;
   borderStrong: string;
   text: string;
@@ -46,11 +58,15 @@ export interface Palette {
 }
 
 export const LIGHT: Palette = {
-  bg: '#F6F5FF',
+  bg: '#F3F3F8',
   surface: '#FFFFFF',
-  surfaceMuted: '#EFEDFC',
-  surfaceSunken: '#E6E3FA',
-  border: '#E1DEF5',
+  surfaceMuted: '#EEEDF7',
+  surfaceSunken: '#E5E4F1',
+  shell: 'rgba(27,31,59,0.04)',
+  ring: 'rgba(27,31,59,0.07)',
+  highlight: 'rgba(255,255,255,0.95)',
+  glow: 'rgba(91,79,224,0.55)',
+  border: '#E3E2EF',
   borderStrong: '#8781B8',
   text: '#1B1F3B',
   textMuted: '#454A6B',
@@ -81,11 +97,15 @@ export const LIGHT: Palette = {
 };
 
 export const DARK: Palette = {
-  bg: '#0F1022',
-  surface: '#181A33',
-  surfaceMuted: '#202344',
-  surfaceSunken: '#131530',
-  border: '#2A2D52',
+  bg: '#0B0C18',
+  surface: '#16182E',
+  surfaceMuted: '#1E2142',
+  surfaceSunken: '#111329',
+  shell: 'rgba(255,255,255,0.035)',
+  ring: 'rgba(255,255,255,0.08)',
+  highlight: 'rgba(255,255,255,0.08)',
+  glow: 'rgba(0,0,0,0.55)',
+  border: '#272A4C',
   borderStrong: '#6A6EA6',
   text: '#ECEBFF',
   textMuted: '#B9B8DA',
@@ -116,26 +136,60 @@ export const DARK: Palette = {
 };
 
 export const SPACE = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32, huge: 44 } as const;
-export const RADIUS = { sm: 10, md: 14, lg: 20, xl: 26, pill: 999 } as const;
+export const RADIUS = { sm: 12, md: 16, lg: 22, xl: 28, pill: 999 } as const;
+/** Double-bezel geometry: the shell's radius and padding; the core's radius is radius − pad. */
+export const BEZEL = { radius: 28, pad: 5 } as const;
 export const MIN_TOUCH = 48;
 
 const tabular: TextStyle['fontVariant'] = ['tabular-nums'];
 
 /**
- * Type scale at the "Standard" text size. Sentence case throughout: all-caps and wide tracking are
- * harder to read for older eyes, so the eyebrow style (overline) is bold rather than uppercase.
+ * Plus Jakarta Sans, one family per weight (Android picks faces by family name, not fontWeight).
+ * Loaded at start-up by the root layout; until then, or if loading fails, text uses the system font
+ * with the same weights, so nothing ever renders without its emphasis.
+ */
+export const FONTS = {
+  400: 'PlusJakartaSans_400Regular',
+  500: 'PlusJakartaSans_500Medium',
+  600: 'PlusJakartaSans_600SemiBold',
+  700: 'PlusJakartaSans_700Bold',
+  800: 'PlusJakartaSans_800ExtraBold',
+} as const;
+
+let fontsReady = false;
+let faceCache: TypeScale | null = null;
+
+/** Called once by the root layout when the fonts have loaded. */
+export function setFontsReady(ready: boolean): void {
+  if (fontsReady === ready) return;
+  fontsReady = ready;
+  faceCache = null;
+}
+
+/** The style for a weight: the matching Plus Jakarta Sans family once loaded, else the system weight. */
+export function typeface(weight: TextStyle['fontWeight'] = '400'): TextStyle {
+  if (!fontsReady) return { fontWeight: weight };
+  const w = weight === 'bold' ? 700 : weight === 'normal' || weight == null ? 400 : Number(weight);
+  const key = w >= 800 ? 800 : w >= 700 ? 700 : w >= 600 ? 600 : w >= 500 ? 500 : 400;
+  return { fontFamily: FONTS[key], fontWeight: undefined };
+}
+
+/**
+ * Type scale at the "Standard" text size. Sentence case for everything people read; only the short
+ * eyebrow pill above a page title is uppercase and tracked, as a label rather than text.
  */
 export const TYPE = {
-  display: { fontSize: 30, lineHeight: 38, fontWeight: '700', letterSpacing: -0.5 },
-  title: { fontSize: 23, lineHeight: 30, fontWeight: '700', letterSpacing: -0.3 },
-  heading: { fontSize: 19, lineHeight: 26, fontWeight: '600', letterSpacing: -0.1 },
+  display: { fontSize: 32, lineHeight: 39, fontWeight: '800', letterSpacing: -0.9 },
+  title: { fontSize: 24, lineHeight: 31, fontWeight: '700', letterSpacing: -0.5 },
+  heading: { fontSize: 19, lineHeight: 26, fontWeight: '700', letterSpacing: -0.2 },
   body: { fontSize: 17, lineHeight: 26, fontWeight: '400' },
   bodyStrong: { fontSize: 17, lineHeight: 26, fontWeight: '600' },
   label: { fontSize: 15, lineHeight: 22, fontWeight: '600' },
   caption: { fontSize: 15, lineHeight: 22, fontWeight: '400' },
-  overline: { fontSize: 14, lineHeight: 20, fontWeight: '700', letterSpacing: 0.2 },
-  metric: { fontSize: 34, lineHeight: 42, fontWeight: '700', letterSpacing: -0.8, fontVariant: tabular },
-  metricSmall: { fontSize: 24, lineHeight: 30, fontWeight: '700', letterSpacing: -0.3, fontVariant: tabular },
+  overline: { fontSize: 14, lineHeight: 20, fontWeight: '700', letterSpacing: 0.1 },
+  eyebrow: { fontSize: 14, lineHeight: 18, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
+  metric: { fontSize: 36, lineHeight: 42, fontWeight: '800', letterSpacing: -1.2, fontVariant: tabular },
+  metricSmall: { fontSize: 24, lineHeight: 30, fontWeight: '700', letterSpacing: -0.5, fontVariant: tabular },
 } satisfies Record<string, TextStyle>;
 
 export type TypeVariant = keyof typeof TYPE;
@@ -143,12 +197,26 @@ export type TypeScale = typeof TYPE;
 
 const round = (n: number) => Math.round(n * 2) / 2;
 
-/** Multiplies font sizes and line heights; everything else (weight, tracking) is unchanged. */
-export function scaleType(scale: number): TypeScale {
-  if (scale === 1) return TYPE;
+/** TYPE with each weight resolved to its typeface (see `typeface`). */
+function withFaces(): TypeScale {
+  if (!fontsReady) return TYPE;
+  if (faceCache) return faceCache;
   const out = {} as Record<TypeVariant, TextStyle>;
   for (const key of Object.keys(TYPE) as TypeVariant[]) {
     const t: TextStyle = TYPE[key];
+    out[key] = { ...t, ...typeface(t.fontWeight) };
+  }
+  faceCache = out as TypeScale;
+  return faceCache;
+}
+
+/** Multiplies font sizes and line heights; everything else (weight, tracking) is unchanged. */
+export function scaleType(scale: number): TypeScale {
+  const base = withFaces();
+  if (scale === 1) return base;
+  const out = {} as Record<TypeVariant, TextStyle>;
+  for (const key of Object.keys(base) as TypeVariant[]) {
+    const t: TextStyle = base[key];
     out[key] = { ...t, fontSize: round((t.fontSize ?? 16) * scale), lineHeight: round((t.lineHeight ?? 24) * scale) };
   }
   return out as TypeScale;
@@ -177,13 +245,21 @@ export function useTheme(): { c: Palette; dark: boolean } {
   return { c: dark ? DARK : LIGHT, dark };
 }
 
+/**
+ * A very soft, wide ambient shadow (two layers: a 1px contact shadow and a long diffused falloff).
+ * Uses the cross-platform `boxShadow` style (New Architecture on Android, CSS on the web).
+ */
 export function cardShadow(dark: boolean): ViewStyle {
-  if (dark) return {};
-  return Platform.select<ViewStyle>({
-    android: { elevation: 1.5 },
-    ios: { shadowColor: '#3B2FA0', shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 4 } },
-    default: { shadowColor: '#3B2FA0', shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 4 } },
-  }) as ViewStyle;
+  return {
+    boxShadow: dark
+      ? '0px 1px 1px rgba(0,0,0,0.35), 0px 24px 48px -24px rgba(0,0,0,0.7)'
+      : '0px 1px 2px rgba(27,31,59,0.04), 0px 22px 44px -22px rgba(59,47,160,0.20)',
+  };
+}
+
+/** The inset top highlight on a card's core. */
+export function coreHighlight(c: Palette): ViewStyle {
+  return { boxShadow: `inset 0px 1px 0px ${c.highlight}` };
 }
 
 export type Tone = 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'demo' | 'neutral';

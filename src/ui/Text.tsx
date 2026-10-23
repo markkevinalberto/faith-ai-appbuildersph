@@ -1,7 +1,14 @@
-import { Text, type TextProps } from 'react-native';
+import { StyleSheet, Text, type StyleProp, type TextProps, type TextStyle } from 'react-native';
 
 import { MAX_TOTAL_TEXT_SCALE, useTextSize } from './textSize';
-import { scaleTextOverride, useTheme, useType, type Palette, type TypeVariant } from './theme';
+import { scaleTextOverride, typeface, useTheme, useType, type Palette, type TypeVariant } from './theme';
+
+/** A `fontWeight` passed in `style` picks the matching typeface (custom fonts pick faces by family). */
+function weightOverride(style: StyleProp<TextStyle>): TextStyle | null {
+  if (!style) return null;
+  const weight = StyleSheet.flatten(style)?.fontWeight;
+  return weight === undefined ? null : typeface(weight);
+}
 
 export type TextTone = 'default' | 'muted' | 'subtle' | 'primary' | 'danger' | 'warning' | 'success' | 'info' | 'demo' | 'onPrimary' | 'hero' | 'heroMuted';
 
@@ -53,7 +60,7 @@ export function AppText({ variant = 'body', tone = 'default', center, style, ...
     <Text
       maxFontSizeMultiplier={MAX_TOTAL_TEXT_SCALE / scale}
       {...rest}
-      style={[type[variant], { color: toneColor(c, tone) }, center && { textAlign: 'center' }, style, scaleTextOverride(style, scale)]}
+      style={[type[variant], { color: toneColor(c, tone) }, center && { textAlign: 'center' }, style, scaleTextOverride(style, scale), weightOverride(style)]}
     />
   );
 }

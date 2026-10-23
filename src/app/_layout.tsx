@@ -1,3 +1,11 @@
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/plus-jakarta-sans';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -5,7 +13,7 @@ import { StatusBar } from 'expo-status-bar';
 import { AppLockProvider } from '@/state/AppLock';
 import { AppStateProvider } from '@/state/AppState';
 import { ReminderCoordinator } from '@/state/ReminderCoordinator';
-import { useTheme } from '@/ui/theme';
+import { setFontsReady, typeface, useTheme } from '@/ui/theme';
 import { installWebStyles } from '@/ui/webStyles';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -13,6 +21,17 @@ installWebStyles();
 
 export default function RootLayout() {
   const { c, dark } = useTheme();
+  // The splash stays up while the fonts load (AppState hides it once the records are open). If a
+  // font fails to load, FAITH carries on in the system font rather than waiting.
+  const [fontsLoaded, fontError] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
+  setFontsReady(fontsLoaded);
+  if (!fontsLoaded && !fontError) return null;
   const base = dark ? DarkTheme : DefaultTheme;
   const navTheme = {
     ...base,
@@ -29,7 +48,7 @@ export default function RootLayout() {
               headerStyle: { backgroundColor: c.bg },
               headerTintColor: c.text,
               headerShadowVisible: false,
-              headerTitleStyle: { fontWeight: '600', fontSize: 18 },
+              headerTitleStyle: { ...typeface('700'), fontSize: 18 },
               headerBackButtonDisplayMode: 'minimal',
               contentStyle: { backgroundColor: c.bg },
             }}>
