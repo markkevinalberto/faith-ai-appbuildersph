@@ -5,8 +5,7 @@
 const STYLE_ID = 'faith-web-styles';
 
 const CSS = `
-:focus-visible { outline: 3px solid #5B4FE0 !important; outline-offset: 2px; }
-@media (prefers-color-scheme: dark) { :focus-visible { outline-color: #A39BFF !important; } }
+:focus-visible { outline: 3px solid #0E7490 !important; outline-offset: 2px; }
 button, [role="button"], [role="radio"], [role="checkbox"], [role="switch"], [role="tab"], a { touch-action: manipulation; }
 `;
 

@@ -12,17 +12,15 @@ import { formatDateTime } from '@/domain/time';
 import type { VitalType } from '@/domain/types';
 import { useApp, useProfile } from '@/state/AppState';
 import { useNow, useQuery } from '@/state/hooks';
-import { IconButton } from '@/ui/Button';
+import { Button, IconButton } from '@/ui/Button';
 import { EscalationCard } from '@/ui/EscalationCard';
 import { EmptyState, InlineLoading, Pill } from '@/ui/Feedback';
 import { ChipSelect, SegmentedControl } from '@/ui/Fields';
 import { Card, Screen, Section, Stat } from '@/ui/Layout';
 import { AppText } from '@/ui/Text';
 import { TimeChart, type ChartPoint } from '@/ui/TimeChart';
-import { SPACE, useTheme } from '@/ui/theme';
-import { GLUCOSE_CONTEXT_OPTIONS, VITAL_META, assessReading, contextLabel, displayUnit, formatDisplay, positionPill, readingDisplay, toDisplay, type BuiltInVital } from '@/ui/vitals';
-
-const TREND_THRESHOLD: Record<string, number> = { glucose: 10, blood_pressure: 5, weight: 1, pulse: 5, spo2: 2, temperature: 0.5, custom: 0 };
+import { RADIUS, SPACE, useTheme } from '@/ui/theme';
+import { GLUCOSE_CONTEXT_OPTIONS, TREND_THRESHOLD, VITAL_META, assessReading, contextLabel, displayUnit, formatDisplay, positionPill, readingDisplay, toDisplay, trendWords, type BuiltInVital } from '@/ui/vitals';
 
 export default function VitalDetail() {
   const { type: typeParam, customId } = useLocalSearchParams<{ type: string; customId?: string }>();
@@ -83,6 +81,7 @@ export default function VitalDetail() {
     readings.map((r) => ({ t: Date.parse(r.measuredAt), v: type === 'blood_pressure' ? (r.systolic as number) : type === 'custom' ? (r.value as number) : (r.valueCanonical as number) })),
     { stableThreshold: TREND_THRESHOLD[type] || 1 },
   );
+  const words = trendWords(trend.direction);
   const latestAlert = mostSevere(all.slice(-1).map((r) => assessReading(r, q.data?.targets ?? [], profile.emergencyNumber).escalation));
   const summary = readings.length
     ? `${title}: ${readings.length} readings in this period. Average ${type === 'blood_pressure' ? `${Math.round(mean(readings.map((r) => r.systolic as number)) as number)}/${Math.round(mean(readings.map((r) => r.diastolic as number)) as number)}` : fmt(s.mean as number)} ${unit}.`
@@ -99,9 +98,9 @@ export default function VitalDetail() {
         }}
       />
       {latestAlert && now.getTime() - Date.parse(all[all.length - 1].measuredAt) < 48 * 3_600_000 ? <EscalationCard result={latestAlert} emergencyNumber={profile.emergencyNumber} /> : null}
+      <Button title={`Log ${title.toLowerCase()}`} icon="add" size="lg" onPress={() => router.push({ pathname: '/vitals/new', params: { type, ...(customId ? { customId } : {}) } })} />
       <SegmentedControl
         options={[
-          { value: 'day', label: 'Day' },
           { value: 'week', label: 'Week' },
           { value: 'month', label: 'Month' },
           { value: 'year', label: 'Year' },
@@ -173,13 +172,23 @@ export default function VitalDetail() {
             )}
             <Stat label="Readings" value={String(readings.length)} />
           </View>
-          <AppText variant="caption" tone="muted" style={{ marginTop: SPACE.md }}>
-            {trend.direction === 'insufficient_data'
-              ? 'Trend: not enough readings across enough days yet.'
-              : trend.direction === 'stable'
-                ? 'Trend: no clear upward or downward change in this period.'
-                : `Trend: ${trend.direction === 'rising' ? 'upward' : 'downward'} over ${Math.round(trend.spanDays as number)} days (straight-line fit; discuss changes with your clinician).`}
-          </AppText>
+          <View style={styles.trendRow}>
+            {words ? (
+              <View style={[styles.trendChip, { backgroundColor: c.surfaceMuted }]}>
+                <Ionicons name={words.icon} size={17} color={c.textMuted} />
+                <AppText variant="label" tone="muted">
+                  {words.label}
+                </AppText>
+              </View>
+            ) : null}
+            <AppText variant="caption" tone="muted" style={{ flex: 1, minWidth: 180 }}>
+              {trend.direction === 'insufficient_data'
+                ? 'Not enough readings across enough days to show a trend yet.'
+                : trend.direction === 'stable'
+                  ? 'No clear change up or down in this period.'
+                  : `Over ${Math.round(trend.spanDays as number)} days. Talk to your clinician about changes.`}
+            </AppText>
+          </View>
         </Card>
       ) : null}
 
@@ -240,4 +249,6 @@ const styles = StyleSheet.create({
   chartHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACE.sm },
   stats: { flexDirection: 'row', justifyContent: 'space-between', gap: SPACE.md },
   histRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, minHeight: 60, paddingVertical: SPACE.sm },
+  trendRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: SPACE.sm, marginTop: SPACE.md },
+  trendChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: SPACE.md, paddingVertical: 6, borderRadius: RADIUS.pill },
 });

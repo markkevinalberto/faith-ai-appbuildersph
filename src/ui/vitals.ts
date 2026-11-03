@@ -2,6 +2,7 @@
 import type { IconName } from './Button';
 import type { Tone } from './theme';
 import { evaluateReading } from '../domain/escalation';
+import type { TrendDirection } from '../domain/stats';
 import { classifyAgainst, glucoseMetricForContext, resolveTarget, type RangePosition, type ResolvedTarget } from '../domain/targets';
 import type { BpContext, ClinicianTarget, CustomVitalType, GlucoseContext, Profile, VitalReading, VitalType } from '../domain/types';
 import { cToTemperatureUnit, glucoseDecimals, kgToWeightUnit, mgdlToGlucoseUnit, roundTo } from '../domain/units';
@@ -11,7 +12,7 @@ export type BuiltInVital = Exclude<VitalType, 'custom'>;
 export const VITAL_ORDER: BuiltInVital[] = ['glucose', 'blood_pressure', 'pulse', 'weight', 'temperature', 'spo2'];
 
 export const VITAL_META: Record<BuiltInVital, { label: string; short: string; icon: IconName; tone: Tone }> = {
-  glucose: { label: 'Blood glucose', short: 'Glucose', icon: 'water-outline', tone: 'primary' },
+  glucose: { label: 'Blood sugar', short: 'Sugar', icon: 'water-outline', tone: 'primary' },
   blood_pressure: { label: 'Blood pressure', short: 'BP', icon: 'heart-outline', tone: 'danger' },
   pulse: { label: 'Pulse', short: 'Pulse', icon: 'pulse-outline', tone: 'info' },
   weight: { label: 'Weight', short: 'Weight', icon: 'body-outline', tone: 'success' },
@@ -112,6 +113,23 @@ export function assessReading(r: VitalReading, targets: ClinicianTarget[], emerg
     return { target, position: target ? classifyAgainst(r.valueCanonical as number, target) : null, escalation };
   }
   return { target: null, position: null, escalation };
+}
+
+/** Change over the period (in canonical units) that counts as a real trend rather than day-to-day noise. */
+export const TREND_THRESHOLD: Record<VitalType, number> = { glucose: 10, blood_pressure: 5, weight: 1, pulse: 5, spo2: 2, temperature: 0.5, custom: 0 };
+
+/** Plain words for a trend direction. Neutral on purpose: whether a change is good depends on the person. */
+export function trendWords(direction: TrendDirection): { label: string; icon: IconName } | null {
+  switch (direction) {
+    case 'rising':
+      return { label: 'Going up', icon: 'trending-up-outline' };
+    case 'falling':
+      return { label: 'Going down', icon: 'trending-down-outline' };
+    case 'stable':
+      return { label: 'Steady', icon: 'remove-outline' };
+    default:
+      return null;
+  }
 }
 
 export function positionPill(position: RangePosition | null, target: ResolvedTarget | null): { label: string; tone: Tone } | null {

@@ -1,7 +1,9 @@
 /**
- * FAITH AI design tokens. "Soft structuralism": a cool silver ground with a slight indigo bias, white
- * cores set in machined double-bezel shells, very soft ambient shadows, and the indigo-to-blue brand
- * gradient from the mascot artwork as the one bold colour. Type is Plus Jakarta Sans.
+ * FAITH AI design tokens. "Soft structuralism": an airy near-white ground with a faint mint bias, white
+ * cores set in machined double-bezel shells, very soft ambient shadows, and a clinic teal (the colour
+ * of the cross on FAITH's cap) as the one bold colour, with lavender as the second chart series.
+ * Light by default (see appearance.ts); the dark palette is a soft slate-teal, not near-black.
+ * Type is Plus Jakarta Sans.
  *
  * Sized for older readers: body text 17, no text style below 14 (the tab bar labels are fixed at 12 so
  * five fit a 360px phone). Text colours meet WCAG AA (≥4.5:1) on their intended surfaces,
@@ -11,6 +13,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, useColorScheme, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
+import { isDarkAppearance, useAppearance } from './appearance';
 import { useTextSize } from './textSize';
 
 export interface Palette {
@@ -58,26 +61,26 @@ export interface Palette {
 }
 
 export const LIGHT: Palette = {
-  bg: '#F3F3F8',
+  bg: '#F6F9F8',
   surface: '#FFFFFF',
-  surfaceMuted: '#EEEDF7',
-  surfaceSunken: '#E5E4F1',
-  shell: 'rgba(27,31,59,0.04)',
-  ring: 'rgba(27,31,59,0.07)',
+  surfaceMuted: '#EDF3F2',
+  surfaceSunken: '#E2ECEA',
+  shell: 'rgba(15,60,56,0.04)',
+  ring: 'rgba(15,60,56,0.08)',
   highlight: 'rgba(255,255,255,0.95)',
-  glow: 'rgba(91,79,224,0.55)',
-  border: '#E3E2EF',
-  borderStrong: '#8781B8',
-  text: '#1B1F3B',
-  textMuted: '#454A6B',
-  textSubtle: '#5C6080',
-  primary: '#5B4FE0',
-  primaryPressed: '#4A3FC4',
-  primarySoft: '#ECEAFF',
+  glow: 'rgba(15,125,115,0.45)',
+  border: '#DFE8E6',
+  borderStrong: '#6E8F8A',
+  text: '#12211F',
+  textMuted: '#3E5552',
+  textSubtle: '#546B68',
+  primary: '#0F7D73',
+  primaryPressed: '#0B6860',
+  primarySoft: '#DBF1EE',
   onPrimary: '#FFFFFF',
-  accent: '#3B82F6',
+  accent: '#0E7490',
   success: '#1D7A49',
-  successSoft: '#E3F5EA',
+  successSoft: '#E2F4E9',
   warning: '#8A5300',
   warningSoft: '#FFF1D6',
   danger: '#C0262D',
@@ -86,37 +89,37 @@ export const LIGHT: Palette = {
   infoSoft: '#E6EEFD',
   demo: '#A8326E',
   demoSoft: '#FCE7F1',
-  chartLine: '#5B4FE0',
-  chartSecondary: '#3B9EF6',
-  chartBand: 'rgba(91,79,224,0.10)',
-  chartGrid: '#E8E6F7',
-  hero: '#4B40D0',
-  heroGradient: ['#5145D6', '#3157D4'],
+  chartLine: '#0F7D73',
+  chartSecondary: '#7C5CD6',
+  chartBand: 'rgba(15,125,115,0.10)',
+  chartGrid: '#E4ECEA',
+  hero: '#0F7D73',
+  heroGradient: ['#0F7D73', '#0E6E8C'],
   heroText: '#FFFFFF',
-  heroMuted: '#ECEBFF',
+  heroMuted: '#EEFAF7',
 };
 
 export const DARK: Palette = {
-  bg: '#0B0C18',
-  surface: '#16182E',
-  surfaceMuted: '#1E2142',
-  surfaceSunken: '#111329',
-  shell: 'rgba(255,255,255,0.035)',
-  ring: 'rgba(255,255,255,0.08)',
+  bg: '#121C1B',
+  surface: '#1A2726',
+  surfaceMuted: '#223231',
+  surfaceSunken: '#162221',
+  shell: 'rgba(255,255,255,0.04)',
+  ring: 'rgba(255,255,255,0.09)',
   highlight: 'rgba(255,255,255,0.08)',
-  glow: 'rgba(0,0,0,0.55)',
-  border: '#272A4C',
-  borderStrong: '#6A6EA6',
-  text: '#ECEBFF',
-  textMuted: '#B9B8DA',
-  textSubtle: '#9E9DC4',
-  primary: '#A39BFF',
-  primaryPressed: '#8B82F5',
-  primarySoft: '#2A2760',
-  onPrimary: '#130F3A',
-  accent: '#7FB2FF',
+  glow: 'rgba(0,0,0,0.5)',
+  border: '#2B3D3B',
+  borderStrong: '#6A8A86',
+  text: '#E8F3F1',
+  textMuted: '#B7CBC8',
+  textSubtle: '#9AB1AD',
+  primary: '#5FC9BC',
+  primaryPressed: '#4AB5A8',
+  primarySoft: '#1C3E3A',
+  onPrimary: '#06231F',
+  accent: '#6CC8DC',
   success: '#6BD39A',
-  successSoft: '#14332A',
+  successSoft: '#173629',
   warning: '#F2B54B',
   warningSoft: '#3A2C10',
   danger: '#FF8A8F',
@@ -125,14 +128,14 @@ export const DARK: Palette = {
   infoSoft: '#18283F',
   demo: '#F59AC3',
   demoSoft: '#3A1C2C',
-  chartLine: '#A39BFF',
-  chartSecondary: '#7FB2FF',
-  chartBand: 'rgba(163,155,255,0.14)',
-  chartGrid: '#25284A',
-  hero: '#3B348F',
-  heroGradient: ['#4239B8', '#2A52AD'],
-  heroText: '#F4F3FF',
-  heroMuted: '#DCDAFB',
+  chartLine: '#5FC9BC',
+  chartSecondary: '#B7A3FF',
+  chartBand: 'rgba(95,201,188,0.14)',
+  chartGrid: '#24332F',
+  hero: '#145F58',
+  heroGradient: ['#14665E', '#125673'],
+  heroText: '#F2FBF9',
+  heroMuted: '#D3EEE9',
 };
 
 export const SPACE = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32, huge: 44 } as const;
@@ -240,8 +243,9 @@ export function scaleTextOverride(style: StyleProp<TextStyle>, scale: number): T
 }
 
 export function useTheme(): { c: Palette; dark: boolean } {
+  // Light unless the person chose Dark, or "Match phone" with the phone in dark mode.
   const scheme = useColorScheme();
-  const dark = scheme === 'dark';
+  const dark = isDarkAppearance(useAppearance(), scheme);
   return { c: dark ? DARK : LIGHT, dark };
 }
 

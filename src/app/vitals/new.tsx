@@ -69,6 +69,10 @@ function ReadingForm({ params, existing, customTypes }: { params: Params; existi
   const [saved, setSaved] = useState<{ escalation: EscalationResult | null; pill: { label: string; tone: 'success' | 'warning' } | null; reading: VitalReading } | null>(null);
   const [saving, setSaving] = useState(false);
   const [heard, setHeard] = useState<{ text: string; understood: boolean } | null>(null);
+  // Opened from "Log blood pressure" / "Log blood sugar": go straight to that form, the rest tucked away.
+  const focused = !editing && (params.type === 'glucose' || params.type === 'blood_pressure');
+  const [showKinds, setShowKinds] = useState(!focused);
+  const [showNotes, setShowNotes] = useState(!!existing?.notes);
   const kindOptions = [
     ...VITAL_ORDER.map((t) => ({ value: t as string, label: VITAL_META[t].short })),
     ...customTypes.map((t) => ({ value: `custom:${t.id}`, label: t.name })),
@@ -227,7 +231,7 @@ function ReadingForm({ params, existing, customTypes }: { params: Params; existi
           {editing ? <Button title="Delete reading" icon="trash-outline" variant="danger" onPress={remove} /> : null}
         </FormFooter>
       }>
-      <Stack.Screen options={{ title: editing ? 'Edit reading' : 'Add reading' }} />
+      <Stack.Screen options={{ title: editing ? 'Edit reading' : !showKinds && (kind === 'glucose' || kind === 'blood_pressure') ? `Log ${VITAL_META[kind].label.toLowerCase()}` : 'Add reading' }} />
       {!editing && Platform.OS !== 'web' ? (
         <Card style={{ gap: SPACE.sm }}>
           <VoiceButton label="Say your reading" size={48} showLabel onTranscript={applyVoice} />
@@ -241,7 +245,10 @@ function ReadingForm({ params, existing, customTypes }: { params: Params; existi
           ) : null}
         </Card>
       ) : null}
-      {!editing ? (
+      {!editing && !showKinds ? (
+        <Button title="Log something else" icon="swap-horizontal-outline" variant="ghost" size="sm" onPress={() => setShowKinds(true)} style={{ alignSelf: 'flex-start' }} />
+      ) : null}
+      {!editing && showKinds ? (
         <ChipSelect
           label="What are you recording?"
           options={kindOptions}
@@ -263,7 +270,7 @@ function ReadingForm({ params, existing, customTypes }: { params: Params; existi
 
       {kind === 'glucose' ? (
         <>
-          <TextField label="Glucose" value={value} onChangeText={setValue} keyboardType="decimal-pad" suffix={glucoseUnit} error={errors.value} autoFocus={!editing} />
+          <TextField label="Blood sugar" value={value} onChangeText={setValue} keyboardType="decimal-pad" suffix={glucoseUnit} error={errors.value} autoFocus={!editing} large />
           <SegmentedControl label="Unit shown on your meter" options={[{ value: 'mg/dL', label: 'mg/dL' }, { value: 'mmol/L', label: 'mmol/L' }]} value={glucoseUnit} onChange={switchGlucoseUnit} />
           <ChipSelect label="When was it taken?" options={GLUCOSE_CONTEXT_OPTIONS} selected={context ? [context] : []} onToggle={(v) => setContext(context === v ? null : v)} helper="Context lets FAITH compare the reading with the right target." />
         </>
@@ -273,14 +280,17 @@ function ReadingForm({ params, existing, customTypes }: { params: Params; existi
         <>
           <View style={{ flexDirection: 'row', gap: SPACE.md }}>
             <View style={{ flex: 1 }}>
-              <TextField label="Systolic (top)" value={systolic} onChangeText={setSystolic} keyboardType="number-pad" suffix="mmHg" error={errors.systolic} autoFocus={!editing} />
+              <TextField label="Top (systolic)" value={systolic} onChangeText={setSystolic} keyboardType="number-pad" error={errors.systolic} autoFocus={!editing} large />
             </View>
             <View style={{ flex: 1 }}>
-              <TextField label="Diastolic (bottom)" value={diastolic} onChangeText={setDiastolic} keyboardType="number-pad" suffix="mmHg" error={errors.diastolic} />
+              <TextField label="Bottom (diastolic)" value={diastolic} onChangeText={setDiastolic} keyboardType="number-pad" error={errors.diastolic} large />
             </View>
           </View>
+          <AppText variant="caption" tone="muted" style={{ marginTop: -SPACE.sm }}>
+            Both numbers are in mmHg, as shown on your monitor.
+          </AppText>
           <TextField label="Pulse (optional)" value={pulse} onChangeText={setPulse} keyboardType="number-pad" suffix="bpm" error={errors.pulse} />
-          <ChipSelect label="Position" options={BP_CONTEXT_OPTIONS} selected={context ? [context] : []} onToggle={(v) => setContext(context === v ? null : v)} />
+          <ChipSelect label="Position (optional)" options={BP_CONTEXT_OPTIONS} selected={context ? [context] : []} onToggle={(v) => setContext(context === v ? null : v)} />
         </>
       ) : null}
 
@@ -328,7 +338,11 @@ function ReadingForm({ params, existing, customTypes }: { params: Params; existi
           {errors.when}
         </AppText>
       ) : null}
-      <TextField label="Notes (optional)" value={notes} onChangeText={setNotes} multiline maxLength={500} placeholder="e.g. after a walk, feeling unwell, new meter" />
+      {showNotes ? (
+        <TextField label="Notes (optional)" value={notes} onChangeText={setNotes} multiline maxLength={500} placeholder="e.g. after a walk, feeling unwell, new meter" />
+      ) : (
+        <Button title="Add a note" icon="create-outline" variant="ghost" size="sm" onPress={() => setShowNotes(true)} style={{ alignSelf: 'flex-start' }} />
+      )}
     </Screen>
   );
 }

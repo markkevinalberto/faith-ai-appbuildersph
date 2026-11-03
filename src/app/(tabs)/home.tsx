@@ -6,6 +6,7 @@ import { AiSetupCard } from '@/components/AiSetupCard';
 import { DemoBanner, ProfileButton, greeting } from '@/components/AppChrome';
 import { DateBadge } from '@/components/CareItems';
 import { DoseItem, canTakeNow } from '@/components/DoseItem';
+import { MarkerCard } from '@/components/MarkerCard';
 import { listLabTests, listUpcomingAppointments } from '@/db/repo/care';
 import { applyDoseAction, countTakenSince, listEventsForLocalDate, nextPendingDose } from '@/db/repo/doseEvents';
 import { listMedications } from '@/db/repo/medications';
@@ -21,22 +22,18 @@ import { useApp, useProfile } from '@/state/AppState';
 import { useAction, useNow, useQuery } from '@/state/hooks';
 import { Button } from '@/ui/Button';
 import { EscalationCard } from '@/ui/EscalationCard';
-import { Banner, EmptyState, InlineLoading, Pill } from '@/ui/Feedback';
+import { Banner, EmptyState, InlineLoading } from '@/ui/Feedback';
 import { Card, MascotCard, PageHeader, Screen, Section } from '@/ui/Layout';
 import { AppText } from '@/ui/Text';
-import { useTextSize } from '@/ui/textSize';
 import { RADIUS, SPACE, useTheme } from '@/ui/theme';
-import { VITAL_META, assessReading, positionPill, readingDisplay, type BuiltInVital } from '@/ui/vitals';
+import { assessReading } from '@/ui/vitals';
 
-const HOME_VITALS: BuiltInVital[] = ['glucose', 'blood_pressure', 'weight', 'pulse', 'spo2', 'temperature'];
 const ASK_CHIPS = ['Summarize my glucose this week', 'How do I take my medications?', 'Prepare questions for my next appointment'];
 
 export default function Home() {
   const profile = useProfile();
   const { db, timeZone, locale, notifyChanged } = useApp();
   const { c } = useTheme();
-  // At Large/Extra large text the two-column reading tiles get too narrow; stack them instead.
-  const oneColumn = useTextSize().scale > 1;
   const now = useNow(30_000);
   const run = useAction();
   const today = localDateKey(now, timeZone);
@@ -93,6 +90,13 @@ export default function Home() {
       />
       <DemoBanner />
       {alert ? <EscalationCard result={alert} emergencyNumber={profile.emergencyNumber} /> : null}
+
+      {/* The two numbers people check most, first: one tap to log, trend at a glance. */}
+      <Section title="Your numbers" action={{ label: 'All vitals', onPress: () => router.push('/vitals') }}>
+        <MarkerCard type="blood_pressure" compact />
+        <MarkerCard type="glucose" compact />
+      </Section>
+
       <AiSetupCard />
 
       {!data && q.loading ? <InlineLoading label="Loading today’s plan…" /> : null}
@@ -186,49 +190,6 @@ export default function Home() {
             )}
           </Section>
 
-          {/* Latest readings */}
-          <Section title="Latest readings" action={{ label: 'Add reading', icon: 'add', onPress: () => router.push('/vitals/new') }}>
-            {data.latest.filter((r) => r.type !== 'custom').length === 0 ? (
-              <EmptyState icon="pulse-outline" illustration="onboard-record-glucose" title="No readings yet" message="Log glucose, blood pressure, weight and more. Charts and summaries appear here." action={{ label: 'Add reading', onPress: () => router.push('/vitals/new') }} />
-            ) : (
-              <View style={styles.grid}>
-                {HOME_VITALS.map((type) => {
-                  const r = data.latest.find((x) => x.type === type);
-                  if (!r) return null;
-                  const meta = VITAL_META[type];
-                  const disp = readingDisplay(r, profile);
-                  const a = assessReading(r, data.targets, profile.emergencyNumber);
-                  const pill = positionPill(a.position, a.target);
-                  return (
-                    <Pressable
-                      key={type}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${meta.label}: ${disp.value} ${disp.unit}, ${relativeFromNow(r.measuredAt, now)}${pill ? `, ${pill.label}` : ''}`}
-                      onPress={() => router.push({ pathname: '/vitals/[type]', params: { type } })}
-                      style={({ pressed }) => [styles.tile, oneColumn && { flexBasis: '100%' }, { backgroundColor: c.surface, borderColor: c.border, opacity: pressed ? 0.9 : 1 }]}>
-                      <View style={styles.tileHead}>
-                        <Ionicons name={meta.icon} size={18} color={c.primary} />
-                        <AppText variant="label" tone="muted" numberOfLines={1} style={{ flex: 1 }}>
-                          {meta.short}
-                        </AppText>
-                      </View>
-                      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
-                        <AppText variant="metricSmall">{disp.value}</AppText>
-                        <AppText variant="caption" tone="muted">
-                          {disp.unit}
-                        </AppText>
-                      </View>
-                      <AppText variant="caption" tone="subtle">
-                        {relativeFromNow(r.measuredAt, now)}
-                      </AppText>
-                      {pill ? <Pill label={pill.label} tone={pill.tone} /> : null}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            )}
-          </Section>
-
           {/* Coming up */}
           {data.appts.length + data.labs.length > 0 ? (
             <Section title="Coming up" action={{ label: 'Care plan', onPress: () => router.push('/care') }}>
@@ -276,7 +237,7 @@ export default function Home() {
                   key={text}
                   accessibilityRole="button"
                   onPress={() => router.push({ pathname: '/ask', params: { q: text } })}
-                  style={({ pressed }) => [styles.askChip, { borderColor: c.border, backgroundColor: pressed ? c.surfaceMuted : c.surface }]}>
+                  style={({ pressed }) => [styles.askChip, { borderColor: c.ring, backgroundColor: pressed ? c.surfaceMuted : c.surface }]}>
                   <AppText variant="body" style={{ flex: 1 }}>
                     {text}
                   </AppText>
@@ -296,9 +257,6 @@ const styles = StyleSheet.create({
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.sm },
   track: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
   fill: { height: 8, borderRadius: 4 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.md },
-  tile: { flexBasis: '47%', flexGrow: 1, borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, padding: SPACE.lg, gap: 4, minHeight: 120 },
-  tileHead: { flexDirection: 'row', alignItems: 'center', gap: SPACE.xs },
   upcoming: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, minHeight: 72, paddingVertical: SPACE.sm },
-  askChip: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, minHeight: 48, paddingHorizontal: SPACE.md, borderRadius: RADIUS.md, borderWidth: 1 },
+  askChip: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, minHeight: 52, paddingHorizontal: SPACE.lg, borderRadius: RADIUS.pill, borderWidth: StyleSheet.hairlineWidth },
 });

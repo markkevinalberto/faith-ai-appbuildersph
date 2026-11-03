@@ -19,6 +19,7 @@ import { cancelAllNotifications } from '../services/notifications';
 import { Button } from '../ui/Button';
 import { showAlert } from '../ui/dialog';
 import { ErrorView, LoadingView } from '../ui/Feedback';
+import { parseAppearance, setAppearance } from '../ui/appearance';
 import { parseTextSize, setTextSize } from '../ui/textSize';
 
 /** Browser storage errors raised when another tab already holds the database file. */
@@ -61,6 +62,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const loadProfiles = useCallback(async (db: SqlDatabase) => {
     setTextSize(parseTextSize(await getSetting(db, SETTINGS.textSize)));
+    setAppearance(parseAppearance(await getSetting(db, SETTINGS.appearance)));
     const list = await listProfiles(db);
     const saved = await getSetting(db, SETTINGS.activeProfileId);
     const chosen = list.find((p) => p.id === saved) ?? list.find((p) => !p.isDemo) ?? list[0] ?? null;

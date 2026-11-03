@@ -23,9 +23,11 @@ export interface TextFieldProps {
   autoFocus?: boolean;
   /** Hides the text (API keys). */
   secureTextEntry?: boolean;
+  /** Big centred digits, for the blood pressure and blood sugar numbers. */
+  large?: boolean;
 }
 
-export function TextField({ label, value, onChangeText, placeholder, helper, error, keyboardType, multiline, autoCapitalize, suffix, maxLength, testID, autoFocus, secureTextEntry }: TextFieldProps) {
+export function TextField({ label, value, onChangeText, placeholder, helper, error, keyboardType, multiline, autoCapitalize, suffix, maxLength, testID, autoFocus, secureTextEntry, large }: TextFieldProps) {
   const { c } = useTheme();
   const type = useType();
   const { scale } = useTextSize();
@@ -34,7 +36,7 @@ export function TextField({ label, value, onChangeText, placeholder, helper, err
   return (
     <View style={{ gap: SPACE.xs }}>
       <AppText variant="label">{label}</AppText>
-      <View style={[styles.inputWrap, { borderColor, backgroundColor: c.surface, minHeight: multiline ? 104 : 54 }, focused && { borderWidth: 2 }]}>
+      <View style={[styles.inputWrap, { borderColor, backgroundColor: c.surface, minHeight: large ? 86 : multiline ? 104 : 54 }, large && { borderRadius: RADIUS.lg }, focused && { borderWidth: 2 }]}>
         <TextInput
           testID={testID}
           accessibilityLabel={label}
@@ -53,7 +55,7 @@ export function TextField({ label, value, onChangeText, placeholder, helper, err
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           maxFontSizeMultiplier={MAX_TOTAL_TEXT_SCALE / scale}
-          style={[type.body, styles.input, { color: c.text, textAlignVertical: multiline ? 'top' : 'center' }]}
+          style={[large ? [type.metric, { textAlign: 'center' }] : type.body, styles.input, { color: c.text, textAlignVertical: multiline ? 'top' : 'center' }]}
         />
         {suffix ? (
           <AppText variant="label" tone="muted" style={{ marginLeft: SPACE.sm }}>
@@ -291,7 +293,8 @@ export function DateTimeField({
 
 const styles = StyleSheet.create({
   inputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: SPACE.md },
-  input: { flex: 1, paddingVertical: SPACE.md, minHeight: 48 },
+  // minWidth 0: a browser text input otherwise keeps its built-in width (wider than a phone at large sizes).
+  input: { flex: 1, minWidth: 0, paddingVertical: SPACE.md, minHeight: 48 },
   segment: { flexDirection: 'row', borderRadius: RADIUS.md, padding: 4, gap: 4 },
   segmentItem: { flex: 1, minHeight: MIN_TOUCH, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'transparent', paddingHorizontal: SPACE.xs },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.sm },

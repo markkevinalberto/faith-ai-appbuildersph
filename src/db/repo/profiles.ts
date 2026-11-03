@@ -181,6 +181,8 @@ export const SETTINGS = {
   notificationsAsked: 'notifications_asked',
   /** Device-wide text size: 'standard' | 'large' | 'xlarge'. */
   textSize: 'text_size',
+  /** Device-wide appearance: 'light' (default) | 'dark' | 'system'. */
+  appearance: 'appearance',
   /** First-run AI model set-up: 'done' | 'declined' (unset until one of those happens). */
   aiSetup: 'ai_setup',
   /** Optional online assistant: '1' when switched on (off by default). */

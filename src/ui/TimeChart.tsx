@@ -9,7 +9,7 @@ import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-
 import { linearScale, niceYDomain, timeTicks } from '../domain/chartScale';
 import type { ChartRange } from '../domain/stats';
 import { AppText } from './Text';
-import { SPACE, useTheme } from './theme';
+import { SPACE, typeface, useTheme } from './theme';
 
 export interface ChartPoint {
   t: number;
@@ -77,6 +77,12 @@ export function TimeChart({ points, range, window, timeZone, locale, band, band2
   }, [width, points, band, band2, window.start, window.end, height, range, timeZone, locale]);
 
   const showDots = points.length <= 60;
+  // Axis labels in the app's typeface (SVG text otherwise falls back to a serif on the web).
+  const axisFace = typeface('500');
+  const axisFont = { fontFamily: axisFace.fontFamily, fontWeight: axisFace.fontWeight };
+  // Label every other day when daily labels would run into each other on a narrow phone.
+  const xSpacing = model && model.xTicks.length > 1 ? (width - PAD.l - PAD.r) / (model.xTicks.length - 1) : Infinity;
+  const labelEvery = xSpacing < 56 ? 2 : 1;
 
   return (
     <View onLayout={onLayout} accessible accessibilityRole="image" accessibilityLabel={accessibilitySummary} style={{ height }}>
@@ -87,17 +93,19 @@ export function TimeChart({ points, range, window, timeZone, locale, band, band2
           {model.yTicks.map((t) => (
             <G key={`y${t}`}>
               <Line x1={PAD.l} x2={width - PAD.r} y1={model.y(t)} y2={model.y(t)} stroke={c.chartGrid} strokeWidth={1} />
-              <SvgText x={PAD.l - 6} y={model.y(t) + 4.5} fontSize={AXIS_FONT} fill={c.textSubtle} textAnchor="end">
+              <SvgText x={PAD.l - 6} y={model.y(t) + 4.5} fontSize={AXIS_FONT} fill={c.textSubtle} textAnchor="end" {...axisFont}>
                 {formatY(t)}
               </SvgText>
             </G>
           ))}
-          {model.xTicks.map((t) => (
+          {model.xTicks.map((t, i) => (
             <G key={`x${t.t}`}>
               <Line x1={model.x(t.t)} x2={model.x(t.t)} y1={PAD.t} y2={height - PAD.b} stroke={c.chartGrid} strokeWidth={1} strokeDasharray="2,4" />
-              <SvgText x={model.x(t.t)} y={height - 9} fontSize={AXIS_FONT} fill={c.textSubtle} textAnchor="middle">
-                {t.label}
-              </SvgText>
+              {i % labelEvery === 0 ? (
+                <SvgText x={model.x(t.t)} y={height - 9} fontSize={AXIS_FONT} fill={c.textSubtle} textAnchor="middle" {...axisFont}>
+                  {t.label}
+                </SvgText>
+              ) : null}
             </G>
           ))}
           {model.line2 ? <Path d={model.line2} stroke={c.chartSecondary} strokeWidth={2} fill="none" strokeLinejoin="round" strokeLinecap="round" /> : null}

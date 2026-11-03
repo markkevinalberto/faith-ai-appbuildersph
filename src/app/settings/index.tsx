@@ -7,6 +7,7 @@ import { useEngineState } from '@/ai/inference/engineStore';
 import { getModelSpec } from '@/ai/inference/modelCatalog';
 import { PROVIDERS, isOnlineConfigured, loadOnlineSettings, useOnlineSettings } from '@/ai/inference/onlineAssistant';
 import { initials } from '@/components/AppChrome';
+import { AppearancePicker } from '@/components/AppearancePicker';
 import { TextSizePicker } from '@/components/TextSizePicker';
 import { deleteProfileData } from '@/db/dataManagement';
 import { SETTINGS, setSetting, updateProfile } from '@/db/repo/profiles';
@@ -111,8 +112,9 @@ export default function Settings() {
       </Card>
 
       <Section title="Display">
-        <Card>
+        <Card style={{ gap: SPACE.xl }}>
           <TextSizePicker />
+          <AppearancePicker />
         </Card>
       </Section>
 
