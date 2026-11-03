@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 
+import { StorageBanner } from '@/components/AppChrome';
 import { TextSizePicker } from '@/components/TextSizePicker';
 import { SETTINGS, setSetting } from '@/db/repo/profiles';
 import { seedDemoProfile } from '@/services/demoSeed';
@@ -57,6 +58,7 @@ export default function Welcome() {
           </AppText>
         </View>
       </View>
+      <StorageBanner />
       <AppText variant="body" tone="muted">
         A private companion for living with diabetes, high blood pressure and other long-term conditions.
       </AppText>

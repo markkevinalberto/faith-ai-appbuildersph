@@ -59,10 +59,12 @@
     "eslint-config-expo": "~57.0.2",
     "jest": "^29.7.0",
     "jest-expo": "^57.0.5",
+    "patch-package": "^8.0.0",
     "typescript": "~6.0.3",
     "workbox-cli": "^7.4.1"
   },
   "scripts": {
+    "postinstall": "patch-package",
     "start": "expo start --dev-client",
     "android": "expo start --android --dev-client",
     "ios": "expo start --ios --dev-client",

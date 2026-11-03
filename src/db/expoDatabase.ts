@@ -29,6 +29,11 @@ export interface OpenedDatabase {
   db: SqlDatabase;
   encryption: EncryptionStatus;
   migration: MigrationResult;
+  /**
+   * Browser only: true when the browser refused its private file storage (some in-app browsers and
+   * private modes, or FAITH already open in another tab), so records live in memory for this visit.
+   */
+  temporary?: boolean;
 }
 
 export class DatabaseKeyError extends Error {
@@ -89,11 +94,19 @@ function adapt(raw: SQLite.SQLiteDatabase): SqlDatabase {
 
 export async function openAppDatabase(): Promise<OpenedDatabase> {
   if (Platform.OS === 'web') {
-    // Web preview only (SQLCipher is not available on web). Never used for real data on device.
-    const raw = await SQLite.openDatabaseAsync(DB_NAME);
+    // Web version (SQLCipher is not available in browsers). Records are kept in the browser's private
+    // file storage; if the browser refuses it, FAITH still opens, in memory, and says so.
+    let raw: SQLite.SQLiteDatabase;
+    let temporary = false;
+    try {
+      raw = await SQLite.openDatabaseAsync(DB_NAME);
+    } catch {
+      raw = await SQLite.openDatabaseAsync(':memory:');
+      temporary = true;
+    }
     const db = adapt(raw);
     const migration = await migrate(db);
-    return { db, encryption: { active: false, cipherVersion: null, reason: 'Web preview — encryption unavailable' }, migration };
+    return { db, encryption: { active: false, cipherVersion: null, reason: 'Web version — encryption unavailable' }, migration, temporary };
   }
 
   const { key, created } = await step('Reading the encryption key', getOrCreateKey);

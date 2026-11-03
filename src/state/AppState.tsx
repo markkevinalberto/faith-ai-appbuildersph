@@ -4,7 +4,7 @@
  */
 import * as SplashScreen from 'expo-splash-screen';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { AppState as RNAppState } from 'react-native';
+import { Platform, AppState as RNAppState } from 'react-native';
 
 import { engineStore } from '../ai/inference/engineStore';
 import { localModels } from '../ai/inference/localModels';
@@ -28,11 +28,13 @@ const OPEN_ELSEWHERE = /NoModificationAllowedError|Access Handles cannot be crea
 type Boot =
   | { kind: 'loading' }
   | { kind: 'error'; message: string; keyError: boolean }
-  | { kind: 'ready'; db: SqlDatabase; encryption: EncryptionStatus };
+  | { kind: 'ready'; db: SqlDatabase; encryption: EncryptionStatus; temporary: boolean };
 
 export interface AppStateValue {
   db: SqlDatabase;
   encryption: EncryptionStatus;
+  /** Browser only: records are in memory for this visit (the browser refused its file storage). */
+  temporaryStorage: boolean;
   profiles: Profile[];
   profile: Profile | null;
   timeZone: string;
@@ -77,7 +79,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       openAppDatabase()
         .then(async (opened) => {
           await loadProfiles(opened.db);
-          setBoot({ kind: 'ready', db: opened.db, encryption: opened.encryption });
+          setBoot({ kind: 'ready', db: opened.db, encryption: opened.encryption, temporary: !!opened.temporary });
         })
         .catch((e: unknown) => {
           setBoot({ kind: 'error', message: e instanceof Error ? e.message : 'Unknown error', keyError: e instanceof DatabaseKeyError });
@@ -132,7 +134,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
               ? `${boot.message} Your data stays encrypted on this phone. If you reinstalled the app or restored a backup, the original key may be gone and the data cannot be recovered.`
               : boot.message
         }
-        onRetry={() => void open()}>
+        // In a browser, a failed storage worker can't be revived in place: reload for a fresh one.
+        onRetry={() => (Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.reload() : void open())}>
         {boot.keyError ? (
           <Button
             title="Erase local data and start over"
@@ -161,6 +164,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const value: AppStateValue = {
     db,
     encryption: boot.encryption,
+    temporaryStorage: boot.temporary,
     profiles,
     profile: profiles.find((p) => p.id === activeId) ?? null,
     timeZone,

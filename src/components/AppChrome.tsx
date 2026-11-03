@@ -30,16 +30,33 @@ export function ProfileButton() {
   );
 }
 
-export function DemoBanner() {
-  const { profile } = useApp();
-  if (!profile?.isDemo) return null;
+/** Browser only: warns when records are kept in memory because the browser refused its file storage. */
+export function StorageBanner() {
+  const { temporaryStorage } = useApp();
+  if (!temporaryStorage) return null;
   return (
     <Banner
-      tone="demo"
-      title="Sample data"
-      message="You are viewing a fictional demo person. Nothing here is real health information, and no reminders are scheduled for it."
-      action={<Button title="Switch profile" size="sm" variant="secondary" onPress={() => router.push('/settings')} />}
+      tone="warning"
+      title="Not saved in this browser"
+      message="This browser would not let FAITH save records, so anything you enter is gone when you close this page. If FAITH is open in another tab or window, close it and reload. Otherwise open FAITH in Safari or Chrome itself, not inside another app, or use the Android app."
     />
+  );
+}
+
+export function DemoBanner() {
+  const { profile } = useApp();
+  return (
+    <>
+      <StorageBanner />
+      {profile?.isDemo ? (
+        <Banner
+          tone="demo"
+          title="Sample data"
+          message="You are viewing a fictional demo person. Nothing here is real health information, and no reminders are scheduled for it."
+          action={<Button title="Switch profile" size="sm" variant="secondary" onPress={() => router.push('/settings')} />}
+        />
+      ) : null}
+    </>
   );
 }
 

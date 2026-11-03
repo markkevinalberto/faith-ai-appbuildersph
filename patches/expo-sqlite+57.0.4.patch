@@ -1,0 +1,95 @@
+diff --git a/node_modules/expo-sqlite/web/worker.ts b/node_modules/expo-sqlite/web/worker.ts
+index deaf721..1682f9a 100644
+--- a/node_modules/expo-sqlite/web/worker.ts
++++ b/node_modules/expo-sqlite/web/worker.ts
+@@ -263,9 +263,9 @@ async function closeDatabase(nativeDatabaseId: number) {
+ }
+ 
+ async function deleteDatabase(databasePath: string): Promise<void> {
+-  const { vfs } = await maybeInitAsync();
++  await maybeInitAsync();
+   if (databasePath !== ':memory:') {
+-    vfs.jDelete(databasePath, 0 /* unused arg for AccessHandlePoolVFS */);
++    persistentVfs().jDelete(databasePath, 0 /* unused arg for AccessHandlePoolVFS */);
+   }
+ }
+ 
+@@ -343,7 +343,8 @@ async function importAssetDatabase(
+   assetDatabasePath: string,
+   forceOverwrite: boolean
+ ): Promise<void> {
+-  const { sqlite3, vfs } = await maybeInitAsync();
++  const { sqlite3 } = await maybeInitAsync();
++  const vfs = persistentVfs();
+   if (!forceOverwrite) {
+     const buffer = new DataView(new ArrayBuffer(4));
+     await vfs.jAccess(databasePath, 0 /* unused arg for AccessHandlePoolVFS */, buffer);
+@@ -403,6 +404,7 @@ async function openDatabase(
+ 
+     const flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
+     const vfsName = databasePath === ':memory:' ? VFS_NAME_MEMORY : VFS_NAME_PERSISTENT;
++    if (vfsName === VFS_NAME_PERSISTENT) persistentVfs();
+     pointer = await sqlite3.open_v2(databasePath, flags, vfsName);
+   }
+ 
+@@ -772,27 +774,39 @@ async function maybeFinalizeAllStatements(nativeDatabaseId: number) {
+   if (error) throw error;
+ }
+ 
++// Patched (FAITH AI, patches/expo-sqlite+57.0.4.patch): when the browser refuses the persistent
++// OPFS store (some in-app browsers and private modes, or another tab holding its files), keep the
++// in-memory store working instead of failing every call. Opening a persistent database then throws
++// the browser's original error, so the app can fall back to ':memory:' and explain why.
++let _vfsError: unknown = null;
++
++function persistentVfs(): AccessHandlePoolVFS {
++  if (_vfs) return _vfs;
++  throw _vfsError instanceof Error ? _vfsError : new Error(String(_vfsError ?? 'Persistent storage is not available in this browser'));
++}
++
+ async function maybeInitAsync(): Promise<{
+   sqlite3: SQLiteAPI;
+-  vfs: AccessHandlePoolVFS;
++  vfs: AccessHandlePoolVFS | null;
+   vfsMemory: MemoryVFS;
+ }> {
+   if (!_sqlite3) {
+     const module = await WaSQLiteFactory({
+       locateFile: () => wasmModule,
+     });
+-    _sqlite3 = SQLite.Factory(module) as SQLiteAPI;
+-    if (!_sqlite3) {
++    const sqlite3 = SQLite.Factory(module) as SQLiteAPI;
++    if (!sqlite3) {
+       throw new Error('Failed to initialize wa-sqlite');
+     }
+ 
+     if (_vfs == null) {
+-      _vfs = await AccessHandlePoolVFS.create(VFS_NAME_PERSISTENT, module);
+-      if (_vfs == null) {
+-        throw new Error('Failed to initialize AccessHandlePoolVFS');
++      try {
++        _vfs = await AccessHandlePoolVFS.create(VFS_NAME_PERSISTENT, module);
++      } catch (e) {
++        _vfs = null;
++        _vfsError = e;
+       }
+     }
+-    _sqlite3.vfs_register(_vfs, true);
+ 
+     if (_vfsMemory == null) {
+       _vfsMemory = await MemoryVFS.create(VFS_NAME_MEMORY, module);
+@@ -800,9 +814,11 @@ async function maybeInitAsync(): Promise<{
+         throw new Error('Failed to initialize MemoryVFS');
+       }
+     }
+-    _sqlite3.vfs_register(_vfsMemory, false);
++    if (_vfs) sqlite3.vfs_register(_vfs, true);
++    sqlite3.vfs_register(_vfsMemory, !_vfs);
++    _sqlite3 = sqlite3;
+   }
+-  if (_vfs == null || _vfsMemory == null) {
++  if (_vfsMemory == null) {
+     throw new Error('Invalid VFS state');
+   }
+   return { sqlite3: _sqlite3, vfs: _vfs, vfsMemory: _vfsMemory };
