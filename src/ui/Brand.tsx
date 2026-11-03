@@ -39,10 +39,14 @@ export function MeaningLine({ center = false }: { center?: boolean }) {
 const HEART =
   'M12 20.3c-.36 0-.72-.12-1-.36C7.6 17.1 3.4 13.5 3.4 9.1 3.4 6.4 5.5 4.3 8.1 4.3c1.6 0 3 .8 3.9 2.1.9-1.3 2.3-2.1 3.9-2.1 2.6 0 4.7 2.1 4.7 4.8 0 4.4-4.2 8-7.6 10.84-.28.24-.64.36-1 .36z';
 
+/** The heartbeat line through the heart (as in the app icon). */
+const PULSE = 'M5.6 11.6H9l1.4-2.7 1.9 5.5 1.5-2.8h4.6';
+
 export function BrandMark({ size = 48, tile = false }: { size?: number; tile?: boolean }) {
   const { dark } = useTheme();
-  const from = dark ? '#7FB2FF' : '#3B82F6';
-  const to = dark ? '#B79BFF' : '#7C3AED';
+  // The app icon's teal gradient (scripts/make-icons.js), lighter in the dark theme.
+  const from = dark ? '#5FC9BC' : '#16A394';
+  const to = dark ? '#6CC8DC' : '#0E6E8C';
   return (
     <View
       accessibilityRole="image"
@@ -55,7 +59,8 @@ export function BrandMark({ size = 48, tile = false }: { size?: number; tile?: b
             <Stop offset="1" stopColor={to} />
           </LinearGradient>
         </Defs>
-        <Path d={HEART} fill="none" stroke="url(#faithHeart)" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
+        <Path d={HEART} fill="none" stroke="url(#faithHeart)" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+        <Path d={PULSE} fill="none" stroke="url(#faithHeart)" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
       </Svg>
     </View>
   );

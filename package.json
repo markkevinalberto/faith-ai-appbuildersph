@@ -59,14 +59,16 @@
     "eslint-config-expo": "~57.0.2",
     "jest": "^29.7.0",
     "jest-expo": "^57.0.5",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "workbox-cli": "^7.4.1"
   },
   "scripts": {
     "start": "expo start --dev-client",
     "android": "expo start --android --dev-client",
     "ios": "expo start --ios --dev-client",
     "web": "expo start --web",
-    "export:web": "expo export --platform web && node scripts/postexport-web.js",
+    "export:web": "expo export --platform web && node scripts/postexport-web.js && workbox generateSW workbox-config.js",
+    "icons": "node scripts/make-icons.js",
     "deploy:web": "npm run export:web && cd dist-web && npx vercel@latest link --yes --project faith-ai-web && npx vercel@latest deploy --prod --yes",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",

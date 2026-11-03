@@ -9,7 +9,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "faithai",
     "userInterfaceStyle": "automatic",
-    "backgroundColor": "#F6F5FF",
+    "backgroundColor": "#F6F9F8",
     "ios": {
       "bundleIdentifier": "com.faithai.app",
       "supportsTablet": false,
@@ -23,7 +23,7 @@
       "versionCode": 1,
       "allowBackup": false,
       "adaptiveIcon": {
-        "backgroundColor": "#EDEBFF",
+        "backgroundColor": "#0F7D73",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -53,11 +53,11 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#F6F5FF",
+          "backgroundColor": "#F6F9F8",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 140,
           "dark": {
-            "backgroundColor": "#0F1022",
+            "backgroundColor": "#F6F9F8",
             "image": "./assets/images/splash-icon.png"
           }
         }
@@ -73,7 +73,7 @@
         "expo-notifications",
         {
           "icon": "./assets/images/notification-icon.png",
-          "color": "#5B4FE0",
+          "color": "#0F7D73",
           "defaultChannel": "dose-reminders"
         }
       ],

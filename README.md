@@ -2,7 +2,7 @@
 
 **F**amily **A**ssistant for **I**llness, **T**reatment & **H**ealth. *Your health, in your hands. Even offline.*
 
-Source: https://github.com/markkevinalberto/faith-ai-appbuildersph · Web demo: https://faith-ai-web.vercel.app · Landing page: https://faith-ai-landing.vercel.app · Android APK: https://github.com/markkevinalberto/faith-ai-appbuildersph/releases
+Source: https://github.com/markkevinalberto/faith-ai-appbuildersph · Web app (installable PWA, opens offline): https://faith-ai-web.vercel.app · Landing page: https://faith-ai-landing.vercel.app · Android APK: https://github.com/markkevinalberto/faith-ai-appbuildersph/releases
 
 **A private, offline-first health companion for people living with diabetes, high blood pressure and other long-term conditions.** It runs on Android first, with iOS to follow, using React Native and Expo. All of its AI runs **on the phone**: llama.cpp, whisper.cpp and Google ML Kit.
 

@@ -56,7 +56,9 @@ Added 2026-10-10. In Settings → Online assistant (or with one tap on the offer
   - expo-image-picker (camera and gallery for scanning)
   - expo-network (connection and airplane-mode status for the offline badge)
   - expo-build-properties, expo-dev-client
-- react-native-svg (MIT), used for the custom time-scaled charts
+- react-native-svg (MIT), used for the custom time-scaled charts and the trend lines on the blood pressure and blood sugar cards
+- Plus Jakarta Sans (SIL Open Font License) through @expo-google-fonts/plus-jakarta-sans, bundled with the app
+- Workbox CLI 7 (MIT, Google) generates the service worker that lets the web version install as an app (PWA) and open without internet. It caches only the app's own files; health data and AI models are never in it
 - @fugood/react-native-audio-pcm-stream 1.1.4 (MIT): microphone capture as raw PCM in memory
 - buffer 6.0.3 (MIT, feross): the Node `Buffer` polyfill that whisper.rn expects the app to provide
 - @react-native-community/datetimepicker (MIT)

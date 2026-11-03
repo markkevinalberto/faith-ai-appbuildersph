@@ -6,8 +6,12 @@
         { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
         { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" }
       ]
+    },
+    {
+      "source": "/(sw.js|manifest.json)",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     }
   ],
-  "rewrites": [{ "source": "/((?!api/|assets/|_expo/|favicon.ico|metadata.json).*)", "destination": "/index.html" }],
+  "rewrites": [{ "source": "/((?!api/|assets/|_expo/|icons/|favicon.ico|metadata.json|manifest.json|sw.js|workbox-).*)", "destination": "/index.html" }],
   "functions": { "api/**/*.js": { "maxDuration": 30 } }
 }
