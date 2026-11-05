@@ -54,6 +54,14 @@ export default function Vitals() {
 
       <MarkerCard type="blood_pressure" />
       <MarkerCard type="glucose" />
+      <Card padded={false} style={{ paddingHorizontal: SPACE.lg, paddingVertical: SPACE.xs }}>
+        <ListRow
+          icon="document-text-outline"
+          title="Weekly and monthly reports"
+          subtitle="Blood pressure and blood sugar, ready to email or bring to your check-up"
+          onPress={() => router.push('/vitals/report')}
+        />
+      </Card>
 
       <Section title="Other readings" hint="Pulse, weight, temperature, oxygen and anything your care team asks for.">
         <Card padded={false} style={{ paddingHorizontal: SPACE.lg, paddingVertical: SPACE.xs }}>

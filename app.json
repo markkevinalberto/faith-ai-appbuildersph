@@ -102,7 +102,9 @@
             "enableProguardInReleaseBuilds": false,
             "enableMinifyInReleaseBuilds": false,
             "packagingOptions": {
-              "pickFirst": ["**/libc++_shared.so"]
+              "pickFirst": [
+                "**/libc++_shared.so"
+              ]
             }
           }
         }
@@ -112,7 +114,8 @@
         {
           "enableOpenCLAndHexagon": false
         }
-      ]
+      ],
+      "expo-mail-composer"
     ],
     "experiments": {
       "typedRoutes": true,

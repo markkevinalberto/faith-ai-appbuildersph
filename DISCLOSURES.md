@@ -58,6 +58,8 @@ Added 2026-10-10. In Settings → Online assistant (or with one tap on the offer
   - expo-build-properties, expo-dev-client
 - react-native-svg (MIT), used for the custom time-scaled charts and the trend lines on the blood pressure and blood sugar cards
 - Plus Jakarta Sans (SIL Open Font License) through @expo-google-fonts/plus-jakarta-sans, bundled with the app
+- expo-print and expo-mail-composer (MIT): render the weekly and monthly reports to PDF on the phone and open the person's own email app with the PDF attached. No email service or server is involved
+- patch-package (MIT) re-applies a small fix to expo-sqlite's browser worker (`patches/`), so FAITH still opens when a browser refuses its file storage
 - Workbox CLI 7 (MIT, Google) generates the service worker that lets the web version install as an app (PWA) and open without internet. It caches only the app's own files; health data and AI models are never in it
 - @fugood/react-native-audio-pcm-stream 1.1.4 (MIT): microphone capture as raw PCM in memory
 - buffer 6.0.3 (MIT, feross): the Node `Buffer` polyfill that whisper.rn expects the app to provide
